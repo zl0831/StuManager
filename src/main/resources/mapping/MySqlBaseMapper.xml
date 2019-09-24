@@ -1,0 +1,214 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="zl.app.mysql.mapper.base.IMySqlBaseMapper">
+
+	<select id="getModelByID" parameterType="java.util.HashMap"
+		resultType="java.util.HashMap">
+		select
+		<foreach collection="COLUMNS" item="item" index="index"
+			separator=",">
+			${item}
+		</foreach>
+		from ${TABLE_NAME} where ${KEY_ID}=#{KEY_VALUE} limit 1
+	</select>
+
+	<select id="getModelBystrWhere"
+		parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select
+		<foreach collection="COLUMNS" item="item" index="index"
+			separator=",">
+			${item}
+		</foreach>
+
+		from ${TABLE_NAME}
+		<if test="strWhere_Value !=null and strWhere_Value!= ''">
+			WHERE ${strWhere_Value}
+		</if>
+		limit 1
+	</select>
+
+	<select id="getListByStrWhere" parameterType="java.util.HashMap"
+		resultType="java.util.HashMap">
+		Select
+		<foreach collection="COLUMNS" item="item" index="index"
+			separator=",">
+			${item}
+		</foreach>
+		From ${TABLE_NAME}
+		<if test="strWhere_Value !=null and strWhere_Value != ''">
+			WHERE ${strWhere_Value}
+		</if>
+		<if test="OrderList_Value !=null and OrderList_Value != ''">
+			order by ${OrderList_Value}
+		</if>
+	</select>
+
+	<select id="getListByPage" parameterType="java.util.HashMap"
+		resultType="java.util.HashMap">
+		select
+
+		<foreach collection="COLUMNS" item="item" index="index"
+			separator=",">
+			${item}
+		</foreach>
+
+		from ${TABLE_NAME} INNER JOIN (SELECT ${KEY_ID} FROM ${TABLE_NAME}
+		<if test="strWhere_Value !=null and strWhere_Value != ''">
+			WHERE ${strWhere_Value}
+		</if>
+		<if test="OrderList_Value !=null and OrderList_Value != ''">
+			order by ${OrderList_Value}
+		</if>
+		limit ${PageIndex_Value},${PageSize_Value} ) tmp USING (${KEY_ID})
+	</select>
+
+	<select id="getListByPage_Fast"
+		parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select * from ${TABLE_NAME} tmp_a JOIN (
+
+		select ${KEY_ID} from
+		${TABLE_NAME}
+
+		<if test="strWhere_Value !=null and strWhere_Value != ''">
+			WHERE ${strWhere_Value}
+		</if>
+		
+
+		limit ${PageIndex_Value},${PageSize_Value}
+
+		) tmp_b ON tmp_a.${KEY_ID} =
+		tmp_b.${KEY_ID}
+		
+		<if test="OrderList_Value !=null and OrderList_Value != ''">
+			order by tmp_a.${OrderList_Value}
+		</if>
+		
+	</select>
+
+	<select id="getListByPage_Fast_NoWhere"
+		parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select
+
+		<foreach collection="COLUMNS" item="item" index="index"
+			separator=",">
+			${item}
+		</foreach>
+
+		from ${TABLE_NAME}
+		
+		
+		<![CDATA[ where  ${KEY_ID} <= ( ]]>
+		select ${KEY_ID} from ${TABLE_NAME}
+		<if test="OrderList_Value !=null and OrderList_Value != ''">
+			order by ${OrderList_Value}
+		</if>
+		limit ${PageIndex_Value},1
+		)
+
+		<if test="OrderList_Value !=null and OrderList_Value != ''">
+			order by ${OrderList_Value}
+		</if>
+
+		limit ${PageSize_Value}
+	</select>
+
+	<select id="getListByPage_Slow"
+		parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select
+
+		<foreach collection="COLUMNS" item="item" index="index"
+			separator=",">
+			${item}
+		</foreach>
+
+		from ${TABLE_NAME}
+		<if test="strWhere_Value !=null and strWhere_Value != ''">
+			WHERE ${strWhere_Value}
+		</if>
+
+		<if test="OrderList_Value !=null and OrderList_Value != ''">
+			order by ${OrderList_Value}
+		</if>
+		limit ${PageIndex_Value},${PageSize_Value}
+	</select>
+
+	<select id="getListByPage_Slow_ManyTable"
+		parameterType="java.util.HashMap" resultType="java.util.HashMap">
+		select * from (
+		${TABLE_SQL} ) tmp
+		limit ${PageIndex_Value},${PageSize_Value}
+	</select>
+
+
+	<select id="getCount" parameterType="java.util.HashMap"
+		resultType="int">
+		select count(1) from ${TABLE_NAME}
+		<if test="strWhere_Value !=null and strWhere_Value != ''">
+			WHERE ${strWhere_Value}
+		</if>
+	</select>
+
+
+	<select id="getCountBySql" parameterType="java.util.HashMap"
+		resultType="int">
+
+		select count(1) from ( ${TABLE_SQL} ) tmp
+
+	</select>
+
+	<insert id="insert" parameterType="java.util.HashMap">
+		INSERT INTO ${TABLE_NAME} (
+		<foreach collection="COLUMNS" item="item" index="index"
+			separator=",">
+			${item}
+		</foreach>
+		) values (
+		<foreach collection="VALUES" item="item" index="index"
+			separator=",">
+			#{item}
+		</foreach>
+		)
+		
+	    <selectKey keyProperty="Code" resultType="java.lang.Long" order="AFTER">
+           SELECT LAST_INSERT_ID()
+        </selectKey>
+        
+        
+	</insert>
+
+	<update id="update" parameterType="java.util.HashMap">
+
+		UPDATE ${TABLE_NAME} SET
+		<foreach collection="DATA" item="item" index="index"
+			separator=",">
+			${item.COLUMN} = #{item.COL_VALUE}
+		</foreach>
+		<if test="strWhere_Value !=null and strWhere_Value!= ''">
+			WHERE ${strWhere_Value}
+		</if>
+
+	</update>
+
+	<!-- 根据ID删除 -->
+	<delete id="deleteById" parameterType="java.util.HashMap">
+		delete from ${TABLE_NAME}
+		where ${KEY_ID}=#{KEY_VALUE}
+	</delete>
+
+
+	<!-- 根据where删除 -->
+	<delete id="deletebyWhere" parameterType="java.util.HashMap">
+		delete from ${TABLE_NAME}
+		<if test="strWhere_Value !=null and strWhere_Value!= ''">
+			WHERE ${strWhere_Value}
+		</if>
+	</delete>
+	<!-- 查询表名是否存在 -->
+	<select id="existsTable" parameterType="java.util.HashMap"
+		resultType="int">
+
+		SELECT count(1) FROM information_schema.TABLES WHERE table_name ='${TABLE_NAME}'
+
+	</select>
+
+</mapper>

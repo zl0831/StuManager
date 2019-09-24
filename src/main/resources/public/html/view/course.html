@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title></title>
+    <link rel="stylesheet" href="/html/font/iconfont.css" />
+    <link rel="stylesheet" href="/html/css/element.css" />
+    <link rel="stylesheet" href="/html/css/index.css">
+    <link rel="stylesheet" href="/html/css/common.css" />
+</head>
+
+<body>
+    <div id="app" v-cloak>
+        <div class="peak main h100 layout-flex layout-column">
+        
+ 			<div class="search-top">
+                <el-form>
+                    <el-form-item class="inline-block" style="width: 200px" label-width="40px" label="搜索">
+                        <el-input placeholder="请输入课程名" suffix-icon="el-icon-search" v-model="search">
+                        </el-input>
+                    </el-form-item>
+                    <el-form-item class="inline-block" style="width:200px;" label-width="50px"  label="类型" > 
+						<el-select v-model="is_charge" placeholder="类型">
+                             <el-option label="全部"  :value="-1"></el-option>
+                             <el-option label="免费"  :value="0"></el-option>
+                             <el-option label="付费"  :value="1"></el-option>
+                  		</el-select>
+					</el-form-item> 
+                    <el-form-item class="inline-block ml20">
+                        <el-button type="primary" @click="getData()">查询</el-button>
+                        <el-button @click="clear()">重置</el-button>
+                    </el-form-item>
+                    <el-form-item class="float-right">
+                        <el-button @click="allDelete">删除选中</el-button>
+                        <el-button type="primary" @click="handleAdd()">新增</el-button>
+                    </el-form-item>
+                </el-form>
+            </div>
+         
+            <div class="peak-footer layout-1">
+               <el-table :header-cell-style="{background:'#eef1f6',color:'#606266'}" empty-text="暂无数据"  v-loading="loading" :data="tableData" row-key="id"  border fit @selection-change="handleSelectionChange">
+                    <el-table-column type="selection" width="55"></el-table-column>
+                    <el-table-column fixed="left" prop="id" align="center" label="ID"></el-table-column>
+                    <el-table-column fixed="left" prop="course_no" align="center" label="课程编号"></el-table-column>
+                    <el-table-column fixed="left" prop="course_name" align="center" label="课程名"></el-table-column>
+              		<el-table-column fixed="left" prop="course_des" align="center" label="描述"></el-table-column>
+			   		<el-table-column fixed="left" prop="is_charge" align="center" label="是否付费课程">
+		                <template slot-scope="scope">{{ scope.row.is_charge == 0 ? '否' : '是' }}</template>
+              		</el-table-column>
+         
+                    <el-table-column  align="center"    label="操作"   width="300px"   show-overflow-tooltip>
+			            <template slot-scope="scope">
+			                <el-button type="primary" size="mini" v-on:click="handleEdit(scope.$index, scope.row)">编辑</el-button>
+			                <el-button type="danger" size="mini"  v-on:click="handleDelete(scope.$index, scope.row)">删除</el-button>
+			            </template>
+		     		</el-table-column>                     
+                </el-table>
+            </div>
+            
+             <div align="center">
+				    <el-pagination
+				     background
+				      v-on:size-change="handleSizeChange"
+				      v-on:current-change="handleCurrentChange"
+				      :current-page.sync="pageNo"
+				      :page-size="pageSize"
+				      layout="total, prev, pager, next"
+				      :total="totalCount">
+				    </el-pagination>
+ 			</div>
+ 			
+ 		                       
+        </div>
+        
+        <el-dialog :title="dialogtitle"  width="500px" :visible.sync="addFrom" @close="handleResetdialog('courseform')">
+				<el-form status-icon :model="courseform" :rules="rules" ref="courseform" >
+						<el-form-item label="课程编码" prop="course_no" style="width:400px"  :label-width="formLabelWidth" > 
+							<el-input  :disabled="itemEnable"  placeholder="请输入编码"  v-model="courseform.course_no"></el-input>
+						</el-form-item>
+						<el-form-item label="课程名" prop="course_name" style="width:400px"  :label-width="formLabelWidth" > 
+							<el-input  placeholder="请输入名字"  v-model="courseform.course_name"></el-input>
+						</el-form-item>
+						<el-form-item label="是否付费课程" prop="is_charge" style="width:400px":label-width="formLabelWidth"> 
+							<el-radio-group v-model="courseform.is_charge">
+								<el-radio  label="0">否</el-radio> 
+								<el-radio  label="1">是</el-radio> 
+							</el-radio-group>
+						</el-form-item> 
+						<el-form-item label="描述" prop="course_des" style="width:400px"  :label-width="formLabelWidth" > 
+							<el-input  placeholder="课程描述"   v-model="courseform.course_des"></el-input>
+						</el-form-item> 
+				</el-form>
+					
+	            <div slot="footer" class="dialog-footer">
+	                <el-button @click="handleClosedialog()">取 消</el-button>
+	                <el-button type="primary" @click="handlesubmit()">确 定</el-button>
+	            </div>
+	      </el-dialog>
+        
+    </div>
+</body>
+
+</html>
+<script src="/html/js/jquery-1.12.3.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="/html/js/vue.js"></script>
+<script> Vue.config.productionTip = false</script>
+<script src="/html/js/element.js"></script>
+<script src="/html/js/common.js"></script>
+<script type="text/javascript">
+new Vue({
+    el: '#app',
+    data() {
+    	return {
+            search: '',
+            is_charge: -1,
+    		pageNo : 1,
+    		pageSize : 10,
+    		totalCount : 0,
+          	tableData : [],
+          	multipleSelection: [],
+          	loading : true,
+          	addFrom : false,
+          	itemEnable: false,
+          	formLabelWidth :"120px",
+          	addorupdate : 0,
+          	dialogtitle : '',
+			courseform : {
+	      			id : "",                    			
+	    			course_no : "",
+	    			course_name : "", 
+	    			course_des : "",
+	    			is_charge : "0",
+ 				},
+ 		     rules : {
+ 		    		course_no: [
+                       { required: true, message: '请输入课程编码', trigger: 'blur' },
+                   	],
+                   	course_name: [
+                       { required: true, message: '请输课程名', trigger: 'blur' },
+                   	],                 	
+               },
+               
+    	}
+    },
+    mounted() {
+        this.getData();
+    },
+    methods: {
+    	getData() {    		
+    		console.log(this.pageNo)
+	      	  var params = {                      
+	                    pi:this.pageNo,
+	                    ps:this.pageSize,
+	                    search: this.search,
+	                    is_charge: this.is_charge,
+	            };
+
+           $.ajax({
+                type: "get",
+                url: "/course_info/GetCourseByPage",
+                data: params,
+                success: res=>{
+
+                    if(res.isOk)
+                    {
+                        this.tableData = res.data_list;
+                        this.totalCount = res.totalCount;   
+                    }
+                    else
+                    { 
+                    	this.$message.error(res.message); 
+                    }
+
+                 },
+                 beforeSend: res=>{
+                   this.loading=true;
+	             },
+                 complete: res=> {
+                   this.loading=false;
+                 },
+                 error: res=> {
+                   console.log(res);
+                 }
+
+           });
+ 		 },
+         clear() {
+             this.search = "";
+             this.is_charge=-1;
+         },
+ 		handleSizeChange(val) {
+           //console.log(`每页 ${val} 条`);
+         },
+    	handleCurrentChange(val) {     	      	 
+        	console.log(val)       	 
+         	 this.getData();
+         },
+
+         handleDelete(index, row){
+        	 
+        	 this.$confirm('此操作将永久删除, 是否继续?','提示',{
+                 confirmButtonText: '确定',
+                 cancelButtonText: '取消',
+                 type: 'warning'
+             }).then(()=>{
+        	 
+	        	  var params = {                      
+	                      ids: row.id,
+	              };
+	
+	             $.ajax({
+	                  type: "get",
+	                  url: "/course_info/Del",
+	                  data: params,
+	                  success: res=>{
+	                      if(res.isOk)
+	                      {
+	                    	  this.getData();
+	                      }
+	                      else
+	                      { 
+	                    	  this.$message.error(res.message); 
+	                      }
+	
+	                   },
+	                   beforeSend: res=>{
+	                     this.loading=true;
+	  	             },
+	                   complete: res=> {
+	                     this.loading=false;
+	                   },
+	                   error: res=> {
+	                     console.log(res);
+	                   }
+	
+	             });
+             
+             }).catch(()=>{
+                 this.$message({
+                     type: 'info',
+                     message: '已取消删除'
+                 });
+             })
+         },
+         handleAdd(){
+        	 
+        	this.resetuserform();
+				
+           	this.addFrom=true;
+         	this.itemEnable= false; 
+           	this.addorupdate = 1;
+        	this.dialogtitle='新增';
+         },
+         handleEdit(index, row){
+       		var params = {
+ 			    	id :row.id,				
+ 				};
+       		
+	            $.ajax({
+	                type: "post",
+	                url: "/course_info/GetCourseById",
+	                data: params,
+	                success: res=>{
+	                    if(res.isOk)
+	                    {
+	                    	var param = {
+	                    			id : res.data.id,                    			
+	                    			course_no : res.data.course_no,
+	                    			course_name : res.data.course_name, 
+	                    			course_des : res.data.course_des,
+	                    			is_charge : res.data.is_charge+"",
+	                    	}
+	                    	 //编辑的时候显示旧数据
+	            	       	 this.courseform = param;
+	            	       	 
+	                    	 this.addorupdate = 2;
+	                    	 this.dialogtitle='修改';
+	                    	 this.addFrom=true;
+	                    	 this.itemEnable= true;
+	                    }
+	                    else
+	                    { 
+	                  	  this.$message.error(res.message); 
+	                    }
+	
+	                 },
+	                 beforeSend: res=>{
+	                   this.loading=true;
+		             	},
+	                 complete: res=> {
+	                   this.loading=false;
+	                 },
+	                 error: res=> {
+	                   console.log(res);
+	                 }
+	
+	           });
+       	
+         	 
+          },
+         handleClosedialog(){
+        	 this.addFrom=false;
+         },
+         handleResetdialog(form){
+    	 	
+    	 	this.$refs[form].clearValidate(); 
+         },
+         handlesubmit(){
+             this.$refs.courseform.validate((valid) => {
+                 if (valid) {
+			          	  var params = {
+			          			  id:this.courseform.id,
+			          			course_no : this.courseform.course_no,
+                    			course_name : this.courseform.course_name, 
+                    			course_des : this.courseform.course_des,
+                    			is_charge : this.courseform.is_charge,
+			              };
+			          	  console.log(params);
+			          	  
+			          	 var realurl = this.addorupdate == 1 ? "/course_info/Add":"/course_info/Edit";
+			
+			             $.ajax({
+			                  type: "post",
+			                  url: realurl,
+			                  contentType:'application/json;charset=utf-8',
+			                  data: JSON.stringify(params),
+			                  success: res=>{
+			                      if(res.isOk)
+			                      {
+			                          this.$message({
+			                              type: 'success',
+			                              message: '操作成功!'
+			                          });
+			                    	  
+			                    	  this.getData();
+			                      }
+			                      else
+			                      { 
+			                    	  this.$message.error(res.message); 
+			                      }
+			
+			                   },
+			                   beforeSend: res=>{
+			                     this.loading=true;
+			  	             	},
+			                   complete: res=> {
+			                     this.loading=false;
+			                     this.handleClosedialog();
+			                   },
+			                   error: res=> {
+			                	   this.$message.error("操作失败，请查看报错日志");
+			                     	console.log(res);
+			                   }
+			
+			             });
+             
+                 } else {
+                     this.$message({
+                         message: '请填写完整信息',
+                         type: 'warning'
+                     });
+                     return false;
+                 }
+                 
+             });
+             
+         },
+ 		resetuserform(){
+        		var params = {
+    	      			id : "",                    			
+    	    			course_no : "",
+    	    			course_name : "", 
+    	    			course_des : "",
+    	    			is_charge : "0",
+ 				};
+      		this.courseform=params;
+          },
+          // 多选删除获取id
+          handleSelectionChange(val) {
+              this.multipleSelection = val; //选中的
+          },
+          allDelete(){
+         	 let id = []
+              for (var i in this.multipleSelection) {
+                  id.push(this.multipleSelection[i].id)
+              }
+         	 
+         	 this.$confirm('此操作将永久删除, 是否继续?','提示',{
+                  confirmButtonText: '确定',
+                  cancelButtonText: '取消',
+                  type: 'warning'
+              }).then(()=>{
+         	 
+             	 var Ids = id.join(',');  
+                  var ids=Ids.substring(0,Ids.length-1);
+             	 var params = {                      
+ 	                      ids: ids,
+ 	              };
+ 	
+ 	             $.ajax({
+ 	                  type: "get",
+ 	                  url: "/course_info/Del",
+ 	                  data: params,
+ 	                  success: res=>{
+ 	                      if(res.isOk)
+ 	                      {
+ 	                    	  this.$message({
+ 	                                type: 'success',
+ 	                                message: '删除成功!'
+ 	                              });
+ 	                    	  this.getData();
+ 	                      }
+ 	                      else
+ 	                      { 
+ 	                    	  this.$message.error(res.message); 
+ 	                      }
+ 	
+ 	                   },
+ 	                   beforeSend: res=>{
+ 	                     this.loading=true;
+ 	  	             },
+ 	                   complete: res=> {
+ 	                     this.loading=false;
+ 	                   },
+ 	                   error: res=> {
+ 	                     console.log(res);
+ 	                   }
+ 	
+ 	             });
+              
+              }).catch(()=>{
+                  this.$message({
+                      type: 'info',
+                      message: '已取消删除'
+                  });
+              })
+          },
+         
+    }
+})
+</script>
+
+
+
+

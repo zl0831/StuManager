@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <base href="<%=basePath%>">
+    <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link rel="stylesheet" href="/html/font/iconfont.css">
+    <link rel="stylesheet" href="/html/css/element.css">
+    <link rel="stylesheet" href="/html/css/common.css">
+    <link rel="stylesheet" href="/html/css/index.css">
+    <style type="text/css">
+    [v-cloak] {
+        display: none !important;
+    }
+    </style>
+</head>
+
+<body>
+    <div id="app" class="login" v-cloak>
+        <header class="header-out">
+            <div class="company animated bounceInLeft">
+                <div class="systemName">课程管理系统</div>
+            </div>
+        </header>
+        <div class="loginBox layout-center-center">
+            <div class="login-box layout-flex align-center">
+                <div class="login-window pl50 pr50">
+                    <h2 class="mt15 bold mb60 pb20 fs16 align-left border-b c-20222a">学生课程管理</h2>
+                    <el-form status-icon ref="form" :model="form" :rules="rules">
+                        <el-form-item prop="username" class="mb40">
+                            <el-input placeholder="账号" @keyup.enter.native="submitForm('form')" v-model="form.username"><i slot="prefix" class="el-input__icon iconfont icon-iconzh1"></i></el-input>
+                        </el-form-item>
+                        <el-form-item prop="password" class="mb20">
+                            <el-input placeholder="密码" type="password" v-model="form.password" @keyup.enter.native="submitForm('form')"><i slot="prefix" class="el-input__icon iconfont icon-mima"></i></el-input>
+                        </el-form-item>
+                        <el-form-item class="mb20">
+                            <p style="color: red; height: 24px;line-height: 24px;text-align: right;">{{errorText}}</p>
+                        </el-form-item>
+                    </el-form>
+                    <el-button type="primary" class="login-btn w100" @click="submitForm('form')" v-loading.fullscreen.lock="fullscreenLoading" element-loading-text="正在登录..." element-loading-background="rgba(0, 0, 0, 0.8)">登录</el-button>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    <script src="/html/js/jquery-1.12.3.min.js"></script>
+    <script src="/html/js/vue.js"></script>
+    <script>Vue.config.productionTip = false</script>
+    <script src="/html/js/element.js"></script>
+    <script src="/html/js/common.js"></script>
+    <script type="text/javascript">
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                heightH2: document.body.clientHeight - '120' + 'px',
+                form: {
+                	
+                	username:'',
+                	password:''
+                	
+                },
+                data: [],
+                errorText: '',
+                fullscreenLoading: false,
+                rules: {
+                	username: [
+                        { required: true, message: '请输入用户名', trigger: 'blur' },
+                    ],
+                    password: [
+                        { required: true, message: '请输入密码', trigger: 'blur' },
+                        { min: 6, message: '不低于6位', trigger: 'blur' }
+                    ],
+                }
+            }
+        },
+        mounted() {
+            window.onresize = windowResize => {
+                this.heightH2 = document.body.clientHeight - '120' + 'px';
+            };
+        },
+        methods: {
+
+            submitForm(formName) {
+                this.form.isIE = false;
+                if ((navigator.userAgent.indexOf('MSIE') >= 0) && (navigator.userAgent.indexOf('Opera') < 0)) {
+                    this.form.isIE = true;
+                } else if (!!window.ActiveXObject || "ActiveXObject" in window) {
+                    this.form.isIE = true;
+                }
+                this.$refs[formName].validate((valid) => {
+                    if (valid) {
+                    	        
+                    	
+                        var params = {
+                            	username: this.form.username,
+                            	password: this.form.password,
+                            };
+                            
+                        
+                        $.ajax({
+                            url: '/login/CheckLogin',
+                            type: 'post',
+                            data: params,
+                            success: res => {
+                                if (res.isOk) {
+                                	
+                                	 this.errorText = '';
+                                     window.location.href = "/html/index.html";
+                                  
+                                } else {
+                                	
+                                	 this.errorText = res.message;
+                                   
+                                }
+                            },
+                            beforeSend : () => {
+                            	this.fullscreenLoading = true;
+							},
+		                    complete: res=> {
+		                    	this.fullscreenLoading=false;
+		                    },
+		                    error: res=> {
+		                        console.log("error",res);
+		                     }
+                        })
+                        
+                                                          
+                    } else {
+                        this.$message({
+                            message: '请填写完整登陆信息',
+                            type: 'warning'
+                        });
+                        return false;
+                    }
+                });
+            },
+        }
+    })
+    </script>
+</body>
+
+</html>

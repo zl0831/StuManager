@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title></title>
+    <link rel="stylesheet" href="/html/font/iconfont.css" />
+    <link rel="stylesheet" href="/html/css/element.css" />
+    <link rel="stylesheet" href="/html/css/index.css">
+    <link rel="stylesheet" href="/html/css/common.css" />
+</head>
+
+<body>
+    <div id="app" v-cloak>
+        <div class="peak main h100 layout-flex layout-column">
+        
+ 			<div class="search-top">
+                <el-form>
+                    <el-form-item class="inline-block" style="width: 180px" label-width="40px" label="搜索">
+                        <el-input placeholder="请输入学生名" suffix-icon="el-icon-search" v-model="search">
+                        </el-input>
+                    </el-form-item>
+                    <el-form-item class="inline-block" style="width:180px;" label-width="50px"  label="课程">
+		                <el-select  v-model="course_no" placeholder="请选择课程">
+		                    <el-option v-for="item in courseList" :key="item.course_no" :label="item.course_name" :value="item.course_no">
+		                    </el-option>
+		                </el-select>
+            		</el-form-item>
+            		<el-form-item class="inline-block" style="width:220px;" label-width="60px"  label="VIP">
+		                <el-select  v-model="is_vip" placeholder="VIP">
+		                     <el-option label="全部"  :value="-1"></el-option>
+                             <el-option label="否"  :value="0"></el-option>
+                             <el-option label="是"  :value="1"></el-option>
+		                </el-select>
+            		</el-form-item>
+                    <el-form-item class="inline-block" style="width:180px;">
+                        <el-button type="primary" @click="getData()">查询</el-button>
+                        <el-button @click="clear()">重置</el-button>
+                    </el-form-item>
+                    <el-form-item class="float-right">
+                        <el-button @click="allDelete">删除选中</el-button>
+                        <el-button type="primary" @click="handleAdd()">新增</el-button>
+                    </el-form-item>
+                </el-form>
+            </div>
+         
+            <div class="peak-footer layout-1">
+               <el-table :header-cell-style="{background:'#eef1f6',color:'#606266'}" empty-text="暂无数据"  v-loading="loading" :data="tableData" row-key="id"  border fit @selection-change="handleSelectionChange">
+                    <el-table-column type="selection" width="55"></el-table-column>
+                    <el-table-column fixed="left" prop="id" align="center" label="ID"></el-table-column>
+                    <el-table-column fixed="left" prop="stu_no" align="center" label="学生编号"></el-table-column>
+                    <el-table-column fixed="left" prop="name" align="center" label="名字"></el-table-column>
+                    <el-table-column fixed="left" prop="sex" align="center" label="性别">
+		                <template slot-scope="scope">{{ scope.row.sex == 0 ? '男' : '女' }}</template>
+              		</el-table-column>
+              		<el-table-column fixed="left" prop="mobile" align="center" label="手机"></el-table-column>
+               		<el-table-column fixed="left" prop="email" align="center" label="邮箱"></el-table-column>
+               		<el-table-column fixed="left" prop="vx" align="center" label="微信"></el-table-column>
+ 			        <el-table-column fixed="left" prop="address" align="center" label="地址"></el-table-column>
+               		<el-table-column fixed="left" prop="is_vip" align="center" label="是否是VIP">
+		                <template slot-scope="scope">{{ scope.row.is_vip == 0 ? '否' : '是' }}</template>
+              		</el-table-column>
+               		<el-table-column fixed="left" prop="reg_data" align="center" label="注册时间"></el-table-column>
+                  
+                    <el-table-column  align="center"    label="操作"   width="300px"   show-overflow-tooltip>
+			            <template slot-scope="scope">
+			                <el-button type="primary" size="mini" v-on:click="handleEdit(scope.$index, scope.row)">编辑信息</el-button>
+			                <el-button type="primary" size="mini"  v-on:click="handleEditCourse(scope.$index, scope.row)">编辑课程</el-button>
+			                <el-button type="danger" size="mini"  v-on:click="handleDelete(scope.$index, scope.row)">删除</el-button>
+			            </template>
+		     		</el-table-column>                     
+                </el-table>
+            </div>
+            
+             <div align="center">
+				    <el-pagination
+				     background
+				      v-on:size-change="handleSizeChange"
+				      v-on:current-change="handleCurrentChange"
+				      :current-page.sync="pageNo"
+				      :page-size="pageSize"
+				      layout="total, prev, pager, next"
+				      :total="totalCount">
+				    </el-pagination>
+ 			</div>
+ 			
+ 		                       
+        </div>
+        
+        <el-dialog :title="dialogtitle"  width="500px" :visible.sync="addFrom" @close="handleResetdialog('stuform')">
+				<el-form status-icon :model="stuform" :rules="rules" ref="stuform" >
+						<el-form-item label="学生编码" prop="stu_no" style="width:400px"  :label-width="formLabelWidth" > 
+							<el-input  :disabled="itemEnable"  placeholder="请输入编码"  v-model="stuform.stu_no"></el-input>
+						</el-form-item>
+						<el-form-item label="名字" prop="name" style="width:400px"  :label-width="formLabelWidth" > 
+							<el-input  :disabled="itemEnable"  placeholder="请输入名字"  v-model="stuform.name"></el-input>
+						</el-form-item>
+						<el-form-item label="性别" prop="sex" style="width:400px":label-width="formLabelWidth"> 
+							<el-radio-group v-model="stuform.sex">
+								<el-radio  label="0">男</el-radio> 
+								<el-radio  label="1">女</el-radio> 
+							</el-radio-group>
+						</el-form-item> 
+						<el-form-item label="手机号码" prop="mobile" style="width:400px"  :label-width="formLabelWidth" > 
+							<el-input  placeholder="手机号码"   v-model="stuform.mobile"></el-input>
+						</el-form-item> 
+						<el-form-item label="邮箱" prop="email" style="width:400px"  :label-width="formLabelWidth" > 
+							<el-input  placeholder="邮箱"    v-model="stuform.email" ></el-input>
+						</el-form-item> 
+						<el-form-item label="微信" prop="vx" style="width:400px"  :label-width="formLabelWidth" > 
+							<el-input  placeholder="微信"    v-model="stuform.vx"></el-input>
+						</el-form-item> 
+						<el-form-item label="地址" prop="address" style="width:400px"  :label-width="formLabelWidth" > 
+							<el-input  placeholder="地址"    v-model="stuform.address" ></el-input>
+						</el-form-item> 
+						<el-form-item label="是否是VIP" prop="is_vip" style="width:400px":label-width="formLabelWidth"> 
+							<el-radio-group v-model="stuform.is_vip">
+								<el-radio  label="0">否</el-radio> 
+								<el-radio  label="1">是</el-radio> 
+							</el-radio-group>
+						</el-form-item> 
+				</el-form>
+					
+	            <div slot="footer" class="dialog-footer">
+	                <el-button @click="handleClosedialog()">取 消</el-button>
+	                <el-button type="primary" @click="handlesubmit()">确 定</el-button>
+	            </div>
+	      </el-dialog>
+	      
+	     <el-dialog fullscreen  :title="stu_course_title"  :visible.sync="editCourse" ref="Coursedialog" >
+            <div >
+                   <el-row :gutter="20">
+                       <div class="mb10 mr10 ellipsis permission-title">
+						   	<el-button class="float-left" size="small" type="primary" @click="handleCloseCourse()">关闭</el-button>
+						   	 <el-button class="float-right" size="small" type="primary" @click="handleAddCourse()">添加课程</el-button>
+                       </div>
+                       <el-col class="Modular" :span="24">
+                           <el-card class="mf-box-card">
+				                 <el-table :header-cell-style="{background:'#eef1f6',color:'#606266'}" empty-text="暂无数据"  v-loading="loading" :data="coursetableData" row-key="id"  border>
+				                    <el-table-column fixed="left" prop="id" align="center" label="ID"></el-table-column>
+				                    <el-table-column fixed="left" prop="course_no" align="center" label="课程编号"></el-table-column>
+				                    <el-table-column fixed="left" prop="course_name" align="center" label="课程名"></el-table-column>
+							   		<el-table-column fixed="left" prop="is_charge" align="center" label="是否付费课程">
+						                <template slot-scope="scope">{{ scope.row.is_charge == 0 ? '否' : '是' }}</template>
+				              		</el-table-column>
+				         
+				                    <el-table-column  align="center"    label="操作"   width="450px"   show-overflow-tooltip>
+							            <template slot-scope="scope">
+							                <el-button type="danger" size="mini"  v-on:click="handleDeleteCourse(scope.$index, scope.row)">删除</el-button>
+							            </template>
+						     		</el-table-column>                     
+				                </el-table>
+                           </el-card>
+                       </el-col>
+                       
+                   </el-row>
+
+            </div>
+        </el-dialog>
+        
+        <el-dialog title="添加课程"  width="500px" :visible.sync="addCouser" >
+				<el-form>
+                    <el-form-item class="inline-block" prop="addCourse_no" style="width:350px;" label="课程" :label-width="formLabelWidth">
+		                <el-select filterable class="w100" v-model="addCourse_no" placeholder="请选择课程">
+		                    <el-option v-for="item in courseList" :key="item.course_name" :label="item.course_name" :value="item.course_no">
+		                    </el-option>
+		                </el-select>
+            		</el-form-item>
+				</el-form>
+					
+	            <div slot="footer" class="dialog-footer">
+	                <el-button @click="handleCloseAddCourse()">取 消</el-button>
+	                <el-button type="primary" @click="handlesubmitAddCourse()">确 定</el-button>
+	            </div>
+	      </el-dialog>
+        
+    </div>
+</body>
+
+</html>
+<script src="/html/js/jquery-1.12.3.min.js" type="text/javascript" charset="utf-8"></script>
+<script src="/html/js/vue.js"></script>
+<script> Vue.config.productionTip = false</script>
+<script src="/html/js/element.js"></script>
+<script src="/html/js/common.js"></script>
+<script type="text/javascript">
+new Vue({
+    el: '#app',
+    data() {
+    	return {
+            search: '',
+            course_no: '',
+            is_vip: -1,
+            addCourse_no: '',
+            curStu_no: '',
+            courseList: [],
+    		pageNo : 1,
+    		pageSize : 10,
+    		totalCount : 0,
+          	tableData : [],
+          	multipleSelection: [],
+          	coursetableData : [],
+          	loading : true,
+          	addFrom : false,
+          	editCourse: false,
+          	addCouser: false,
+          	itemEnable: false,
+          	formLabelWidth :"120px",
+          	addorupdate : 0,
+          	dialogtitle : '',
+          	stu_course_title: '',
+          	itemform:{
+          		id:"",
+          		userpwd:"",
+          		repeatpwd:""
+          	},
+			stuform : {
+	    			id : "",                    			
+	      			stu_no : "",
+	      			name : "", 
+	      			sex: "0",
+	      			mobile: "",
+	      			email: "",
+	      			vx : "",
+	      			address : "",
+	      			is_vip : "0",
+	      			reg_data: "",
+ 				},
+ 		     rules : {
+ 		    		stu_no: [
+                       { required: true, message: '请输入学生编码', trigger: 'blur' },
+                   	],
+                   	name: [
+                       { required: true, message: '请输入学生姓名', trigger: 'blur' },
+                   	],
+                 	
+               },
+               
+    	}
+    },
+    mounted() {
+        this.getData();
+        this.loadCourse();
+    },
+    methods: {
+    	getData() {    		
+    		console.log(this.pageNo)
+	      	  var params = {                      
+	                    pi:this.pageNo,
+	                    ps:this.pageSize,
+	                    search: this.search,
+	                    is_vip: this.is_vip,
+	                    course_no: this.course_no,
+	            };
+
+           $.ajax({
+                type: "get",
+                url: "/student_info/GetStudentByPage",
+                data: params,
+                success: res=>{
+
+                	this.tableData = [];
+                    if(res.isOk)
+                    {
+                        this.tableData = res.data_list;
+                        this.totalCount = res.totalCount;   
+                    }
+                    else
+                    { 
+                    	this.$message.error(res.message); 
+                    }
+
+                 },
+                 beforeSend: res=>{
+                   this.loading=true;
+	             },
+                 complete: res=> {
+                   this.loading=false;
+                 },
+                 error: res=> {
+                   console.log(res);
+                 }
+
+           });
+ 		 },
+     	getCourseData() {    		
+ 	      	  var params = {                      
+ 	      			stu_no: this.curStu_no,
+ 	            };
+
+            $.ajax({
+                 type: "get",
+                 url: "/student_course_grant/GetListByStuNo",
+                 data: params,
+                 success: res=>{
+
+                	 this.coursetableData = [];
+                     if(res.isOk)
+                     {
+                         this.coursetableData = res.data_list;   
+                     }
+                     else
+                     { 
+                     	this.$message.error(res.message); 
+                     }
+
+                  },
+                  beforeSend: res=>{
+                    this.loading=true;
+ 	             },
+                  complete: res=> {
+                    this.loading=false;
+                  },
+                  error: res=> {
+                    console.log(res);
+                  }
+
+            });
+  		 },
+     	loadCourse() {    		
+            $.ajax({
+                 type: "get",
+                 url: "/course_info/GetList",
+                 success: res=>{
+
+                     if(res.isOk)
+                     {
+                         this.courseList = res.data_list;
+                     }
+                     else
+                     { 
+                     	this.$message.error(res.message); 
+                     }
+
+                  },
+                  beforeSend: res=>{
+                    this.loading=true;
+ 	             },
+                  complete: res=> {
+                    this.loading=false;
+                  },
+                  error: res=> {
+                    console.log(res);
+                  }
+
+            });
+  		 },
+         clear() {
+  			this.search= "";
+             this.course_no= "";
+             this.is_vip= -1;
+         },
+ 		handleSizeChange(val) {
+           //console.log(`每页 ${val} 条`);
+         },
+    	handleCurrentChange(val) {     	      	 
+        	console.log(val)       	 
+         	 this.getData();
+         },
+
+         handleDelete(index, row){
+        	 
+        	 this.$confirm('此操作将永久删除, 是否继续?','提示',{
+                 confirmButtonText: '确定',
+                 cancelButtonText: '取消',
+                 type: 'warning'
+             }).then(()=>{
+        	 
+	        	  var params = {                      
+	                      ids: row.id,
+	              };
+	
+	             $.ajax({
+	                  type: "get",
+	                  url: "/student_info/Del",
+	                  data: params,
+	                  success: res=>{
+	                      if(res.isOk)
+	                      {
+	                    	  this.getData();
+	                      }
+	                      else
+	                      { 
+	                    	  this.$message.error(res.message); 
+	                      }
+	
+	                   },
+	                   beforeSend: res=>{
+	                     this.loading=true;
+	  	             },
+	                   complete: res=> {
+	                     this.loading=false;
+	                   },
+	                   error: res=> {
+	                     console.log(res);
+	                   }
+	
+	             });
+             
+             }).catch(()=>{
+                 this.$message({
+                     type: 'info',
+                     message: '已取消删除'
+                 });
+             })
+         },
+         handleDeleteCourse(index, row){
+        	 
+        	 this.$confirm('此操作将永久删除, 是否继续?','提示',{
+                 confirmButtonText: '确定',
+                 cancelButtonText: '取消',
+                 type: 'warning'
+             }).then(()=>{
+        	 
+	        	  var params = {                      
+	                      ids: row.id,
+	              };
+	
+	             $.ajax({
+	                  type: "get",
+	                  url: "/student_course_grant/DeleteByIds",
+	                  data: params,
+	                  success: res=>{
+	                      if(res.isOk)
+	                      {
+	                    	  this.getCourseData();
+	                      }
+	                      else
+	                      { 
+	                    	  this.$message.error(res.message); 
+	                      }
+	
+	                   },
+	                   beforeSend: res=>{
+	                     this.loading=true;
+	  	             },
+	                   complete: res=> {
+	                     this.loading=false;
+	                   },
+	                   error: res=> {
+	                     console.log(res);
+	                   }
+	
+	             });
+             
+             }).catch(()=>{
+                 this.$message({
+                     type: 'info',
+                     message: '已取消删除'
+                 });
+             })
+         },
+         handleAdd(){
+        	 
+        	this.resetuserform();
+				
+           	this.addFrom=true;
+         	this.itemEnable= false; 
+           	this.addorupdate = 1;
+        	this.dialogtitle='新增';
+         },
+         handleEdit(index, row){
+       		var params = {
+ 			    	id :row.id,				
+ 				};
+       		
+	            $.ajax({
+	                type: "get",
+	                url: "/student_info/GetStudentById",
+	                data: params,
+	                success: res=>{
+	                    if(res.isOk)
+	                    {
+	                    	var param = {
+	                    			id : res.data.id,                    			
+				          			stu_no : res.data.stu_no,
+				          			name : res.data.name, 
+				          			sex : res.data.sex+'',
+				          			mobile : res.data.mobile,
+				          			email : res.data.email,
+				          			vx : res.data.vx,
+				          			address : res.data.address,
+				          			is_vip : res.data.is_vip+'',
+				          			reg_data: res.data.reg_data,
+	                    	}
+	                    	 //编辑的时候显示旧数据
+	            	       	 this.stuform = param;
+	            	       	 
+	                    	 this.addorupdate = 2;
+	                    	 this.dialogtitle='修改';
+	                    	 this.addFrom=true;
+	                    	 this.itemEnable= true;
+	                    }
+	                    else
+	                    { 
+	                  	  this.$message.error(res.message); 
+	                    }
+	
+	                 },
+	                 beforeSend: res=>{
+	                   this.loading=true;
+		             	},
+	                 complete: res=> {
+	                   this.loading=false;
+	                 },
+	                 error: res=> {
+	                   console.log(res);
+	                 }
+	
+	           });
+       	
+         	 
+          },
+          handleAddCourse(){    	 				
+        	 	this.addCouser=true;
+     	 },
+          handleEditCourse(index, row){
+     			this.stu_course_title = row.name+"的课程";
+				this.curStu_no = row.stu_no;
+				this.editCourse=true;
+         		this.getCourseData();
+         },
+         handleClosedialog(){
+        	 this.addFrom=false;
+         },
+         handleCloseAddCourse(){
+        	 this.addCouser=false;
+         },
+         handleCloseCourse(){
+        	 this.addCouser=false;
+        	 this.editCourse=false;
+         },
+         handleResetdialog(form){
+    	 	
+    	 	this.$refs[form].clearValidate(); 
+         },
+         handlesubmit(){
+             this.$refs.stuform.validate((valid) => {
+                 if (valid) {
+			          	  var params = {                      
+			          			stu_no : this.stuform.stu_no,
+			          			name : this.stuform.name, 
+			          			sex : this.stuform.sex,
+			          			mobile : this.stuform.mobile,
+			          			email : this.stuform.email,
+			          			vx : this.stuform.vx,
+			          			address : this.stuform.address,
+			          			is_vip : this.stuform.is_vip,
+			              };
+			          	  console.log(params);
+			          	  
+			          	 var realurl = this.addorupdate == 1 ? "/student_info/Add":"/student_info/Edit";
+			
+			             $.ajax({
+			                  type: "post",
+			                  url: realurl,
+			                  contentType:'application/json;charset=utf-8',
+			                  data: JSON.stringify(params),
+			                  success: res=>{
+			                      if(res.isOk)
+			                      {
+			                          this.$message({
+			                              type: 'success',
+			                              message: '操作成功!'
+			                          });
+			                    	  
+			                    	  this.getData();
+			                      }
+			                      else
+			                      { 
+			                    	  this.$message.error(res.message); 
+			                      }
+			
+			                   },
+			                   beforeSend: res=>{
+			                     this.loading=true;
+			  	             	},
+			                   complete: res=> {
+			                     this.loading=false;
+			                     this.handleClosedialog();
+			                   },
+			                   error: res=> {
+			                	   this.$message.error("操作失败，请查看报错日志");
+			                     	console.log(res);
+			                   }
+			
+			             });
+             
+                 } else {
+                     this.$message({
+                         message: '请填写完整信息',
+                         type: 'warning'
+                     });
+                     return false;
+                 }
+                 
+             });
+             
+         },
+         handlesubmitAddCourse(){
+	          	  var params = {                      
+	          			stu_no : this.curStu_no,
+						course_no : this.addCourse_no,
+	              };
+	          	  console.log(params);			          	 
+	
+	             $.ajax({
+	                  type: "post",
+	                  url: "/student_course_grant/AddOneGrant",
+	                  data: params,
+	                  success: res=>{
+	                      if(res.isOk)
+	                      {
+	                          this.$message({
+	                              type: 'success',
+	                              message: '操作成功!'
+	                          });
+	                    	  
+	                    	  this.getCourseData();
+	                      }
+	                      else
+	                      { 
+	                    	  this.$message.error(res.message); 
+	                      }
+	
+	                   },
+	                   beforeSend: res=>{
+	                     this.loading=true;
+	  	             	},
+	                   complete: res=> {
+	                     this.loading=false;
+	                     this.handleCloseAddCourse();
+	                   },
+	                   error: res=> {
+	                	   this.$message.error("操作失败，请查看报错日志");
+	                     	console.log(res);
+	                   }
+	
+	             });                         
+             
+         },
+ 		resetuserform(){
+        		var params = {
+ 			    	id : "",
+          			stu_no : "",
+          			name : "", 
+          			sex : "0",
+          			mobile : "",
+          			email : "",
+          			vx : "",
+          			address : "",
+          			is_vip : "0",
+ 				};
+      		this.stuform=params;
+          },
+          // 多选删除获取id
+          handleSelectionChange(val) {
+              this.multipleSelection = val; //选中的
+          },
+          allDelete(){
+         	 let id = []
+              for (var i in this.multipleSelection) {
+                  id.push(this.multipleSelection[i].id)
+              }
+         	 
+         	 this.$confirm('此操作将永久删除, 是否继续?','提示',{
+                  confirmButtonText: '确定',
+                  cancelButtonText: '取消',
+                  type: 'warning'
+              }).then(()=>{
+         	 
+             	 var Ids = id.join(',');  
+                  var ids=Ids.substring(0,Ids.length-1);
+             	 var params = {                      
+ 	                      ids: ids,
+ 	              };
+ 	
+ 	             $.ajax({
+ 	                  type: "get",
+ 	                  url: "/student_info/Del",
+ 	                  data: params,
+ 	                  success: res=>{
+ 	                      if(res.isOk)
+ 	                      {
+ 	                    	  this.$message({
+ 	                                type: 'success',
+ 	                                message: '删除成功!'
+ 	                              });
+ 	                    	  this.getData();
+ 	                      }
+ 	                      else
+ 	                      { 
+ 	                    	  this.$message.error(res.message); 
+ 	                      }
+ 	
+ 	                   },
+ 	                   beforeSend: res=>{
+ 	                     this.loading=true;
+ 	  	             },
+ 	                   complete: res=> {
+ 	                     this.loading=false;
+ 	                   },
+ 	                   error: res=> {
+ 	                     console.log(res);
+ 	                   }
+ 	
+ 	             });
+              
+              }).catch(()=>{
+                  this.$message({
+                      type: 'info',
+                      message: '已取消删除'
+                  });
+              })
+          },
+         
+    }
+})
+</script>
+
+
+
+
