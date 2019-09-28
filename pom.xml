@@ -12,6 +12,7 @@
 	<artifactId>StuManager</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>StuManager</name>
+	<packaging>war</packaging>
 	<description>Demo project for Spring Boot</description>
 
 	<properties>
@@ -59,11 +60,6 @@
             <artifactId>spring-boot-starter-tomcat</artifactId>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-jasper</artifactId>
-            <scope>provided</scope>
-        </dependency>
 		
 		
 		<dependency>
@@ -74,6 +70,7 @@
 	</dependencies>
 
 	<build>
+		<finalName>Demo</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
